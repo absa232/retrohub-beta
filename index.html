@@ -80,7 +80,41 @@
       max-width: 400px;
     }
 
-    .enter-btn {
+    /* Loading spinner animation */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .welcome-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(0, 0, 0, 0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .google-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .google-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .google-icon.hidden,
+    #welcome-btn-label.hidden {
+      display: none;
+    }
+
+        .enter-btn {
       background-color: var(--accent);
       color: #000;
       border: none;
@@ -91,11 +125,68 @@
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(255, 139, 167, 0.4);
       transition: transform 0.2s, background-color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-width: 100%;
+      white-space: nowrap;
     }
 
     .enter-btn:hover {
       transform: scale(1.05);
       background-color: #ff9fb5;
+    }
+
+    /* Make Google icon more visible */
+    .google-icon svg path {
+      filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+    }
+
+    /* Target emulator canvas wrapper */
+    .emulator-container,
+    .ejs-container {
+      position: relative !important;
+    }
+
+    .google-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .google-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Hide only EmulatorJS virtual gamepad / D-pad UI, not the main menu */
+    .ejs_dpad_main,
+    .ejs_dpad_vertical,
+    .ejs_dpad_horizontal,
+    .ejs_dpad_bar,
+    .ejs_virtualGamepad_parent,
+    .ejs_virtualGamepad_top,
+    .ejs_virtualGamepad_bottom,
+    .ejs_virtualGamepad_left,
+    .ejs_virtualGamepad_right,
+    .ejs_virtualGamepad_button,
+    .ejs_virtualGamepad_open,
+    [class*="virtualGamepad"],
+    [class*="dpad"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      max-width: 0 !important;
+      max-height: 0 !important;
+      overflow: hidden !important;
     }
 
     /* --- DASHBOARD STYLES --- */
@@ -227,49 +318,62 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
-      display: flex;
-      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      display: none;
       align-items: center;
       justify-content: center;
       z-index: 10000;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      background-color: rgba(0,0,0,0.75);
     }
+    .modal.active { display: flex; }
 
-    .modal.active {
-      visibility: visible;
-      opacity: 1;
+    .modal-content {
+      background: var(--card-bg);
+      width: 90%;
+      max-width: 900px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
     }
 
     .modal-header {
-      width: 100%;
-      max-width: 800px;
+      padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
-      padding: 0 10px;
+      background: rgba(0,0,0,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
     }
+
+    .modal-title { font-size: 1.1rem; color: var(--accent); font-weight: 700; }
 
     .close-btn {
       background: none;
       border: none;
       color: var(--text);
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       cursor: pointer;
     }
 
-    .emulator-container {
+    .emulator-body {
       width: 100%;
-      max-width: 800px;
-      height: 600px;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
+      height: 560px;
+      background-color: #000;
+      position: relative;
+    }
+
+    #game { width: 100%; height: 100%; }
+    .crt-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.08)), repeating-linear-gradient(transparent, rgba(0,0,0,0.06) 1px, transparent 2px);
+      mix-blend-mode: overlay;
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -280,7 +384,18 @@
     <div class="heart-icon">🎮💖</div>
     <h1 class="landing-title">Welcome to Our Retro Hub</h1>
     <p class="landing-subtitle">I built this small space so we can play through some iconic classics together, no matter how many miles are between us.</p>
-    <button class="enter-btn" onclick="loginAndEnter()">Sign in with Google 💖</button>
+    <button id="welcome-btn" class="enter-btn" onclick="loginAndEnter()">
+      <span id="welcome-spinner" class="welcome-spinner"></span>
+      <span id="welcome-google-icon" class="google-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Google">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.23 9.24 3.64l6.81-6.81C35.91 2.36 30.52 0 24 0 14.64 0 6.5 5.37 2.56 13.22l7.91 6.13C12.12 13.13 17.44 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.64-.15-3.22-.43-4.74H24v9h12.7c-.55 2.98-2.24 5.5-4.77 7.19l7.72 5.98C43.9 36.74 46.5 31.22 46.5 24.5z"/>
+          <path fill="#FBBC05" d="M32.93 36.95c-2.1 1.4-4.8 2.22-8.93 2.22-6.56 0-12.12-4.43-14.1-10.36l-8.03 6.2C5.5 42.53 13.82 48 24 48c7.1 0 13.08-2.34 17.43-6.35l-8.5-4.7z"/>
+          <path fill="#34A853" d="M10.9 29.81A14.97 14.97 0 0 1 9.5 24c0-1.7.29-3.33.81-4.81l-8.03-6.2A23.95 23.95 0 0 0 0 24c0 3.83.92 7.45 2.56 10.66l8.34-6.85z"/>
+        </svg>
+      </span>
+      <span id="welcome-btn-label">Sign in with Google</span>
+    </button>
   </div>
 
   <!-- MAIN DASHBOARD -->
@@ -298,52 +413,21 @@
       </div>
     </header>
 
-    <!-- SNES SECTION -->
-    <div class="category-section">
-      <h2 class="category-title">Super Nintendo (SNES)</h2>
-      <div class="games-grid">
-
-        <!-- Game 1 -->
-        <div class="game-card" onclick="launchGame('snes', 'roms/super-mario.snes', 'Super Mario World')">
-          <div class="game-thumb">🍄</div>
-          <h3>Super Mario World</h3>
-          <p>Classic 2D platforming masterpiece.</p>
-        </div>
-
-        <!-- Game 2 -->
-        <div class="game-card" onclick="launchGame('snes', 'roms/donkey-kong.snes', 'Donkey Kong Country')">
-          <div class="game-thumb">🍌</div>
-          <h3>Donkey Kong Country</h3>
-          <p>Awesome co-op adventures!</p>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- GBA SECTION -->
-    <div class="category-section">
-      <h2 class="category-title">Game Boy Advance (GBA)</h2>
-      <div class="games-grid">
-
-        <!-- Game 3 -->
-        <div class="game-card" onclick="launchGame('gba', 'roms/pokemon.gba', 'Pokemon Emerald')">
-          <div class="game-thumb">⚡</div>
-          <h3>Pokemon Emerald</h3>
-          <p>Explore Hoenn together.</p>
-        </div>
-
-      </div>
-    </div>
+    <!-- DYNAMIC GAMES LIBRARY (populated from GitHub 'roms' folder) -->
+    <div id="games-container"></div>
   </div>
 
   <!-- POPUP EMULATOR PLAYER -->
   <div id="player-modal" class="modal">
-    <div class="modal-header">
-      <h2 id="modal-title">Loading Game...</h2>
-      <button class="close-btn" onclick="closeGame()">✕ Close</button>
-    </div>
-    <div class="emulator-container">
-      <div id="game"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Loading Game...</div>
+        <button class="close-btn" onclick="closeGame()">✕</button>
+      </div>
+      <div class="emulator-body" id="emulator-container">
+        <div id="game"></div>
+        <div class="crt-overlay"></div>
+      </div>
     </div>
   </div>
 
@@ -351,7 +435,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // YOUR EXPLICIT FIREBASE CONFIG
     const firebaseConfig = {
@@ -370,39 +454,233 @@
 
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    let currentUser = null;
-    let currentGameTitle = "";
+    window.currentUser = null;
+    window.currentGameTitle = "";
+    window.cloudSaveEnabled = true;
+
+    function showWelcomeLoadingState() {
+      const spinner = document.getElementById('welcome-spinner');
+      const icon = document.getElementById('welcome-google-icon');
+      const label = document.getElementById('welcome-btn-label');
+      if (spinner) spinner.classList.remove('hidden');
+      if (icon) icon.classList.add('hidden');
+      if (label) label.classList.add('hidden');
+    }
+
+    function updateWelcomeButton(user) {
+      const spinner = document.getElementById('welcome-spinner');
+      const icon = document.getElementById('welcome-google-icon');
+      const label = document.getElementById('welcome-btn-label');
+      
+      // Hide spinner and show icon + label
+      if (spinner) spinner.classList.add('hidden');
+      if (icon) icon.classList.remove('hidden');
+      if (label) label.classList.remove('hidden');
+      
+      // Update label text
+      if (label) {
+        label.innerText = user ? `Continue as ${user.displayName || 'Google User'}` : 'Sign in with Google';
+      }
+    }
 
     function updateUserUI(user) {
-      if (!user) return;
-      currentUser = user;
-      document.getElementById('landing-screen').classList.add('hidden');
-      document.getElementById('user-greeting').innerText = `Welcome back! Pick a game and let's play together!`;
-      
-      // Update Top-Right Profile Badge
-      document.getElementById('user-name').innerText = user.displayName || 'Player';
-      if (user.photoURL) {
-        document.getElementById('user-avatar').src = user.photoURL;
+      window.currentUser = user || null;
+      document.getElementById('user-greeting').innerText = user
+        ? `Welcome back! Pick a game and let's play together!`
+        : `Pick a game and let's play together!`;
+
+      updateWelcomeButton(user);
+
+      if (user) {
+        document.getElementById('user-name').innerText = user.displayName || 'Player';
+        if (user.photoURL) {
+          document.getElementById('user-avatar').src = user.photoURL;
+        } else {
+          document.getElementById('user-avatar').src = 'https://via.placeholder.com/40';
+        }
+        document.getElementById('user-profile').classList.add('active');
       } else {
+        document.getElementById('user-name').innerText = 'Guest Player';
         document.getElementById('user-avatar').src = 'https://via.placeholder.com/40';
+        document.getElementById('user-profile').classList.add('active');
       }
-      document.getElementById('user-profile').classList.add('active');
+    }
+
+    function enterArcadeWithoutLogin() {
+      updateUserUI({
+        displayName: 'Guest Player',
+        photoURL: 'https://via.placeholder.com/40'
+      });
     }
 
     window.loginAndEnter = async function() {
+      const isLocalFile = location.protocol === 'file:';
+
+      if (auth.currentUser) {
+        document.getElementById('landing-screen').classList.add('hidden');
+        updateUserUI(auth.currentUser);
+        // Push dashboard URL when already logged in
+        window.history.pushState({}, '', '/dashboard');
+        return;
+      }
+
+      if (isLocalFile) {
+        enterArcadeWithoutLogin();
+        document.getElementById('landing-screen').classList.add('hidden');
+        return;
+      }
+
+      // Show loading spinner during sign in
+      showWelcomeLoadingState();
+
       try {
         const result = await signInWithPopup(auth, provider);
+        document.getElementById('landing-screen').classList.add('hidden');
         updateUserUI(result.user);
+        // Push dashboard URL after successful login
+        window.history.pushState({}, '', '/dashboard');
       } catch (error) {
+        // If user cancelled the popup, just close the modal and keep current session
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+          console.log('User cancelled login, keeping current session');
+          document.getElementById('landing-screen').classList.add('hidden');
+          updateWelcomeButton(auth.currentUser); // Reset button to show current state
+          return;
+        }
+        
+        // Only switch to guest for actual authentication errors
         console.error("Authentication failed:", error);
+        enterArcadeWithoutLogin();
+        document.getElementById('landing-screen').classList.add('hidden');
+        updateWelcomeButton(null); // Reset button to sign in state
       }
     };
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
         updateUserUI(user);
+        // Update button to show "Continue as [Name]" without loading spinner
+        updateWelcomeButton(user);
+        // Show landing screen when user is detected
+        document.getElementById('landing-screen').classList.remove('hidden');
+      } else if (location.protocol !== 'file:') {
+        updateUserUI(null);
+        // Update button to show "Sign in with Google" without loading spinner
+        updateWelcomeButton(null);
+        // Show landing screen when no user
+        document.getElementById('landing-screen').classList.remove('hidden');
       }
     });
+
+    // Initialize: show landing screen with loading spinner while auth state is being checked
+    showWelcomeLoadingState();
+    document.getElementById('landing-screen').classList.remove('hidden');
+
+    // URL Router for dashboard and game play routes
+    const router = () => {
+      const path = window.location.pathname;
+      const isDashboard = path === '/dashboard';
+      const isPlayRoute = path.startsWith('/play/');
+      
+      if (isDashboard) {
+        // Dashboard route: only show if logged in
+        if (window.auth.currentUser) {
+          document.getElementById('landing-screen').classList.add('hidden');
+          // Dashboard is already visible by default
+        } else {
+          document.getElementById('landing-screen').classList.remove('hidden');
+        }
+      } else if (isPlayRoute) {
+        // Game play route: extract system and title from /play/{system}/{title}
+        const pathParts = path.split('/');
+        if (pathParts.length >= 4) {
+          const system = pathParts[2];
+          const encodedTitle = pathParts[3];
+          const gameTitle = decodeURIComponent(encodedTitle);
+          
+          console.log('ROUTE_PLAY_DETECTED', { system, gameTitle });
+          
+          // Hide landing screen and prepare to auto-load game
+          document.getElementById('landing-screen').classList.add('hidden');
+          
+          // Store for auto-load after library is fetched
+          window.__autoLoadGame = { system, gameTitle };
+        }
+      } else {
+        // Root route: show landing if not logged in, else show dashboard
+        if (window.auth.currentUser) {
+          document.getElementById('landing-screen').classList.add('hidden');
+        } else {
+          document.getElementById('landing-screen').classList.remove('hidden');
+        }
+      }
+    };
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', () => {
+      console.log('POPSTATE_EVENT', window.location.pathname);
+      router();
+    });
+
+    // Call router on page load to handle direct URL visits
+    setTimeout(() => {
+      router();
+    }, 100);
+
+    // Expose auth and provider for non-module scripts (profile dropdown handlers)
+    window.auth = auth;
+    window.provider = provider;
+
+    // Initialize IndexedDB for instant local save caching
+    const dbName = 'ArcadeSaves';
+    const storeName = 'saves';
+    let localDB = null;
+
+    const initIndexedDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, 1);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          localDB = request.result;
+          resolve(localDB);
+        };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName, { keyPath: 'id' });
+          }
+        };
+      });
+    };
+
+    const saveToIndexedDB = async (gameTitle, saveBlob) => {
+      if (!localDB) await initIndexedDB();
+      return new Promise((resolve, reject) => {
+        const tx = localDB.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.put({
+          id: gameTitle,
+          blob: saveBlob,
+          timestamp: Date.now()
+        });
+        tx.onerror = () => reject(tx.error);
+        tx.oncomplete = () => resolve(true);
+      });
+    };
+
+    const loadFromIndexedDB = async (gameTitle) => {
+      if (!localDB) await initIndexedDB();
+      return new Promise((resolve, reject) => {
+        const tx = localDB.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const request = store.get(gameTitle);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result?.blob || null);
+      });
+    };
+
+    // Initialize IndexedDB on page load
+    initIndexedDB().catch(err => console.warn('IndexedDB init failed:', err));
 
     const blobToBase64 = (blob) => {
       return new Promise((resolve) => {
@@ -410,6 +688,22 @@
         reader.onloadend = () => resolve(reader.result.split(',')[1]);
         reader.readAsDataURL(blob);
       });
+    };
+
+    const normalizeSavePayload = (input) => {
+      if (input == null) return null;
+      if (input instanceof Blob) return input;
+      if (input instanceof ArrayBuffer) return new Blob([input], { type: 'application/octet-stream' });
+      if (ArrayBuffer.isView(input)) return new Blob([input.buffer], { type: 'application/octet-stream' });
+      if (typeof input === 'string') return new Blob([input], { type: 'text/plain' });
+      if (typeof input === 'object') {
+        if (input.state !== undefined) return normalizeSavePayload(input.state);
+        if (input.blob !== undefined) return normalizeSavePayload(input.blob);
+        if (input.data !== undefined) return normalizeSavePayload(input.data);
+        if (input.file !== undefined) return normalizeSavePayload(input.file);
+        return new Blob([JSON.stringify(input)], { type: 'application/json' });
+      }
+      return new Blob([String(input)], { type: 'text/plain' });
     };
 
     const base64ToBlob = (base64) => {
@@ -421,78 +715,638 @@
       return new Blob([new Uint8Array(byteNumbers)], { type: 'application/octet-stream' });
     };
 
-    window.syncSaveToCloud = async function(saveBlob) {
-      if (!currentUser || !currentGameTitle) return;
+    window.saveCurrentGameState = async function() {
+      const emu = window.EJS_emulator;
+      if (!window.currentGameTitle || !emu) {
+        console.warn('AUTO_SAVE_SKIPPED: emulator not ready');
+        return null;
+      }
+
+      const state = (emu.gameManager && typeof emu.gameManager.getState === 'function') ? emu.gameManager.getState() : null;
+      if (state == null) {
+        console.warn('AUTO_SAVE_SKIPPED: no state available yet');
+        return null;
+      }
+
+      await window.syncSaveToCloud(state);
+      return state;
+    };
+
+    window.syncSaveToCloud = async function(saveInput) {
+      console.log('SYNC_SAVE_START', { currentUser: !!window.currentUser, currentGameTitle: window.currentGameTitle, uid: window.currentUser?.uid });
+
+      if (!window.currentGameTitle) {
+        console.error('SYNC_FAILED: currentGameTitle is null or undefined');
+        return;
+      }
+
       try {
-        const base64Data = await blobToBase64(saveBlob);
-        const userDocRef = doc(db, "saves", currentUser.uid);
-        
-        await setDoc(userDocRef, {
-          [currentGameTitle]: base64Data
-        }, { merge: true });
-        
-        console.log("Cloud save synced to Firestore!");
+        console.log('NORMALIZING_PAYLOAD', typeof saveInput, saveInput instanceof Uint8Array ? 'Uint8Array' : typeof saveInput);
+        const saveBlob = normalizeSavePayload(saveInput);
+        console.log('PAYLOAD_NORMALIZED', !!saveBlob, saveBlob?.type, saveBlob?.size);
+
+        if (!saveBlob) {
+          console.warn('No valid save payload to sync.');
+          return;
+        }
+
+        // Always save locally so progress survives crashes and power loss.
+        console.log('SAVING_TO_INDEXEDDB');
+        await saveToIndexedDB(window.currentGameTitle, saveBlob);
+        console.log('LOCAL_SAVE_COMPLETE - Data is safe locally!');
+
+        if (window.cloudSaveEnabled && window.currentUser && window.currentUser.uid) {
+          syncToFirestoreAsync(window.currentGameTitle, saveBlob).catch(err => {
+            console.warn('Background Firestore sync failed:', err?.message || err);
+          });
+        } else {
+          console.log('CLOUD_SYNC_DISABLED: using local IndexedDB save only');
+        }
       } catch (err) {
-        console.error("Firestore save failed:", err);
+        console.error('Local save failed:', err);
+      }
+    };
+
+    // Background Firestore sync (disabled by default until Firebase is configured)
+    const syncToFirestoreAsync = async (gameTitle, saveBlob) => {
+      if (!window.cloudSaveEnabled || !window.currentUser || !window.currentUser.uid) {
+        return;
+      }
+
+      try {
+        console.log('FIRESTORE_SYNC_STARTING_BACKGROUND');
+        const base64Data = await blobToBase64(saveBlob);
+
+        const CHUNK_SIZE = 800000;
+        const chunks = [];
+        for (let i = 0; i < base64Data.length; i += CHUNK_SIZE) {
+          chunks.push(base64Data.substring(i, i + CHUNK_SIZE));
+        }
+
+        console.log('DATA_CHUNKED', { totalChunks: chunks.length });
+
+        const batch = writeBatch(db);
+        const timestamp = Date.now();
+
+        const metadataRef = doc(db, 'saves', window.currentUser.uid, 'games', gameTitle);
+        batch.set(metadataRef, {
+          timestamp: timestamp,
+          chunkCount: chunks.length,
+          totalSize: base64Data.length,
+          lastUpdated: new Date().toISOString()
+        }, { merge: true });
+
+        for (let i = 0; i < chunks.length; i++) {
+          const chunkRef = doc(db, 'saves', window.currentUser.uid, 'games', `${gameTitle}_chunk_${i}`);
+          batch.set(chunkRef, {
+            data: chunks[i],
+            index: i,
+            gameTitle: gameTitle,
+            timestamp: timestamp
+          });
+        }
+
+        await batch.commit();
+        console.log('FIRESTORE_SYNC_COMPLETE');
+      } catch (err) {
+        console.error('Firestore background sync failed:', err.message);
       }
     };
 
     window.loadSaveFromCloud = async function() {
-      if (!currentUser || !currentGameTitle) return null;
+      if (!window.currentGameTitle) return null;
+
       try {
-        const userDocRef = doc(db, "saves", currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
-        
-        if (docSnap.exists() && docSnap.data()[currentGameTitle]) {
-          console.log("Cloud save loaded from Firestore!");
-          const base64Data = docSnap.data()[currentGameTitle];
-          return base64ToBlob(base64Data);
+        // Always try IndexedDB first (instant load if available, works offline and when cloud sync is disabled)
+        console.log('Checking IndexedDB for save...');
+        const localSave = await loadFromIndexedDB(window.currentGameTitle);
+        if (localSave) {
+          console.log('Save loaded from IndexedDB (instant)!');
+          return localSave;
         }
-        return null;
+
+        // Only try Firestore if cloud sync is enabled AND user is logged in
+        if (!window.cloudSaveEnabled || !window.currentUser || !window.currentUser.uid) {
+          console.log('Cloud sync disabled or user not logged in, no remote save to load');
+          return null;
+        }
+
+        console.log('No local save, loading from Firestore...');
+        const metadataRef = doc(db, 'saves', window.currentUser.uid, 'games', window.currentGameTitle);
+        const metadataSnap = await getDoc(metadataRef);
+
+        if (!metadataSnap.exists()) {
+          console.log('No save found for', window.currentGameTitle);
+          return null;
+        }
+
+        const metadata = metadataSnap.data();
+        const chunkCount = metadata.chunkCount || 1;
+        console.log('Loading save from Firestore with', chunkCount, 'chunks');
+
+        let base64Data = '';
+        for (let i = 0; i < chunkCount; i++) {
+          const chunkRef = doc(db, 'saves', window.currentUser.uid, 'games', `${window.currentGameTitle}_chunk_${i}`);
+          const chunkSnap = await getDoc(chunkRef);
+          if (chunkSnap.exists()) {
+            base64Data += chunkSnap.data().data;
+          }
+        }
+
+        if (!base64Data) return null;
+
+        const blob = base64ToBlob(base64Data);
+        saveToIndexedDB(window.currentGameTitle, blob).catch(err => {
+          console.warn('Failed to cache save locally:', err);
+        });
+
+        console.log('Cloud save loaded from Firestore!');
+        return blob;
       } catch (err) {
-        console.error("No Firestore save found or load failed:", err);
+        console.error('Save load failed:', err);
         return null;
       }
     };
   </script>
 
-  <!-- EMULATOR SCRIPT -->
-  <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-
   <script>
+    // GitHub arcade scanner + unified emulator launcher + account helpers
+    const GITHUB_USERNAME = 'absa232';
+    const GITHUB_REPO = 'retrohub';
+
+    const SYSTEM_MAP = {
+      'megadrive': { system: 'Sega_-_Mega_Drive_-_Genesis', core: 'segaMD', name: 'SEGA MEGADRIVE', emoji: '🌀' },
+      'snes': { system: 'Nintendo_-_Super_Nintendo_Entertainment_System', core: 'snes', name: 'SUPER NINTENDO', emoji: '🎮' },
+      'gba': { system: 'Nintendo_-_Game_Boy_Advance', core: 'gba', name: 'GAME BOY ADVANCE', emoji: '🕹️' },
+      'n64': { system: 'Nintendo_-_Nintendo_64', core: 'n64', name: 'NINTENDO 64', emoji: '🏰' }
+    };
+
+    // Create a small dropdown for account actions inside the existing profile badge
+    (function createProfileDropdown(){
+      const profile = document.getElementById('user-profile');
+      if (!profile) return;
+      const menu = document.createElement('div');
+      menu.id = 'profile-dropdown';
+      menu.style.position = 'absolute';
+      menu.style.right = '20px';
+      menu.style.top = '70px';
+      menu.style.background = 'var(--card-bg)';
+      menu.style.border = '1px solid rgba(255,255,255,0.06)';
+      menu.style.borderRadius = '8px';
+      menu.style.display = 'none';
+      menu.style.zIndex = 10001;
+      menu.innerHTML = `
+        <div style="padding:8px 12px; cursor:pointer; color:var(--text); font-size:0.95rem;" id="change-account">🔄 Change Account</div>
+        <div style="padding:8px 12px; cursor:pointer; color:var(--accent); font-size:0.95rem;" id="log-out">🚪 Log Out</div>
+      `;
+      document.body.appendChild(menu);
+
+      profile.style.position = 'relative';
+      profile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
+      });
+      document.addEventListener('click', () => menu.style.display = 'none');
+
+      document.getElementById('change-account').addEventListener('click', () => {
+        menu.style.display = 'none';
+        changeAccount();
+      });
+      document.getElementById('log-out').addEventListener('click', () => {
+        menu.style.display = 'none';
+        logout();
+      });
+    })();
+
+    // Change account (uses modular Firebase auth already initialized in-page)
+    async function changeAccount() {
+      if (window.loginAndEnter) {
+        try { await window.loginAndEnter(); } catch (e) { console.error('Change account failed', e); }
+      } else {
+        alert('Authentication is not ready yet. Please try again.');
+      }
+    }
+
+    async function logout() {
+      try {
+        if (window.auth && typeof window.auth.signOut === 'function') {
+          await window.auth.signOut();
+          location.reload();
+        } else {
+          alert('Logout is not available.');
+        }
+      } catch (err) {
+        console.error('Logout failed', err);
+      }
+    }
+
+    // GitHub scanner to populate #games-container
+    async function fetchArcadeLibrary() {
+      const container = document.getElementById('games-container');
+      if (!container) return;
+
+      const apiUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/roms`;
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          if (response.status === 403) throw new Error('GitHub API rate limit reached. Please wait a few minutes and refresh.');
+          throw new Error(`Could not access 'roms' directory (${response.status}).`);
+        }
+
+        const folders = await response.json();
+        container.innerHTML = '';
+        let totalGamesFound = 0;
+        
+        // Initialize games index for auto-load lookups
+        window.__gamesIndex = {};
+
+        for (const folder of folders) {
+          if (folder.type === 'dir') {
+            const systemKey = folder.name.toLowerCase();
+            const systemData = SYSTEM_MAP[systemKey] || { system: null, core: systemKey, name: folder.name.toUpperCase(), emoji: '🎮' };
+
+            const subfolderUrl = `https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_REPO}/contents/roms/${folder.name}`;
+            const gamesResponse = await fetch(subfolderUrl);
+            if (!gamesResponse.ok) continue;
+
+            const files = await gamesResponse.json();
+
+            const romFiles = files.filter(f => f.type === 'file' && (
+              f.name.endsWith('.zip') || f.name.endsWith('.gen') || f.name.endsWith('.smd') || f.name.endsWith('.bin') || f.name.endsWith('.snes') || f.name.endsWith('.gba') || f.name.endsWith('.z64') || f.name.endsWith('.n64')
+            ));
+
+            if (romFiles.length > 0) {
+              totalGamesFound += romFiles.length;
+
+              const section = document.createElement('div');
+              section.className = 'category-section';
+              section.innerHTML = `
+                <h2 class="category-title">${systemData.name}</h2>
+                <div class="games-grid" id="grid-${systemKey}"></div>
+              `;
+              container.appendChild(section);
+
+              const grid = section.querySelector(`#grid-${systemKey}`);
+
+              romFiles.forEach(file => {
+                const gameTitle = file.name.replace(/\.[^/.]+$/, "");
+                const romPath = `roms/${folder.name}/${file.name}`;
+                const rawRomUrl = file.download_url || `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/main/${romPath}`;
+                const safeRomUrl = rawRomUrl.replace(/'/g, "\\'");
+                const encodedTitle = encodeURIComponent(gameTitle);
+                const boxartUrl = systemData.system ? `https://cdn.jsdelivr.net/gh/libretro/libretro-thumbnails@master/${systemData.system}/Named_Boxarts/${encodedTitle}.png` : '';
+
+                const launchCore = systemData.core || systemKey;
+                
+                // Store game info in index for auto-load lookups (use original unescaped gameTitle)
+                const gameIndexKey = `${systemKey}_${gameTitle}`;
+                window.__gamesIndex[gameIndexKey] = {
+                  core: launchCore,
+                  romPath: safeRomUrl,
+                  title: gameTitle,
+                  system: systemKey
+                };
+                
+                // Also create a slug-based index for URL matching (case-insensitive, handle special chars)
+                const slugTitle = gameTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                const slugIndexKey = `${systemKey}_${slugTitle}`;
+                if (!window.__gamesSlugIndex) window.__gamesSlugIndex = {};
+                window.__gamesSlugIndex[slugIndexKey] = gameIndexKey; // Maps slug back to original key
+                
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                // Use JSON.stringify to properly escape gameTitle for JavaScript string, preventing issues with quotes/apostrophes
+                card.setAttribute('onclick', `launchGameWithRoute('${launchCore}', '${systemKey}', '${safeRomUrl}', ${JSON.stringify(gameTitle)})`);
+                card.innerHTML = `
+                  <div class="game-thumb">${boxartUrl ? `<img src="${boxartUrl}" alt="${gameTitle}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;" onerror="this.outerHTML='${systemData.emoji}'">` : systemData.emoji}</div>
+                  <h3>${gameTitle}</h3>
+                  <p>Click to play!</p>
+                `;
+                grid.appendChild(card);
+              });
+            }
+          }
+        }
+
+        if (totalGamesFound === 0) {
+          container.innerHTML = `<div id="loading-games-msg">No supported ROM files found inside your 'roms' folder.</div>`;
+        }
+        
+        // Check if there's a pending auto-load game to launch
+        if (window.__autoLoadGame) {
+          const { system, gameTitle } = window.__autoLoadGame;
+          console.log('AUTO_LOAD_PENDING', { system, gameTitle });
+          
+          // Create slug from URL game title for matching
+          const urlSlug = gameTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          const slugIndexKey = `${system}_${urlSlug}`;
+          
+          // Try slug-based lookup first (for URLs like /play/snes/super-mario-world)
+          let gameIndexKey = null;
+          if (window.__gamesSlugIndex && window.__gamesSlugIndex[slugIndexKey]) {
+            gameIndexKey = window.__gamesSlugIndex[slugIndexKey];
+            console.log('AUTO_LOAD_SLUG_MATCH', { urlSlug, gameIndexKey });
+          } else {
+            // Fallback to exact match (for backward compatibility)
+            gameIndexKey = `${system}_${gameTitle}`;
+            if (!window.__gamesIndex[gameIndexKey]) {
+              gameIndexKey = null;
+            }
+          }
+          
+          const gameInfo = gameIndexKey ? window.__gamesIndex[gameIndexKey] : null;
+          
+          if (gameInfo) {
+            console.log('AUTO_LOAD_FOUND', gameInfo);
+            // Wait a moment to ensure UI is ready, then launch
+            setTimeout(() => {
+              launchGame(gameInfo.core, gameInfo.romPath, gameInfo.title);
+            }, 500);
+          } else {
+            console.warn('AUTO_LOAD_GAME_NOT_FOUND', { system, gameTitle, urlSlug, slugIndexKey, availableKeys: Object.keys(window.__gamesIndex) });
+          }
+          
+          // Clear the pending auto-load
+          window.__autoLoadGame = null;
+        }
+
+      } catch (err) {
+        console.error('Error scanning library:', err);
+        container.innerHTML = `<div id="loading-games-msg">⚠️ ${err.message}</div>`;
+      }
+    }
+
+    // Wrapper function to handle URL routing before launching game
+    async function launchGameWithRoute(core, system, romPath, title) {
+      // Push the play route URL
+      const encodedTitle = encodeURIComponent(title);
+      window.history.pushState({}, '', `/play/${system}/${encodedTitle}`);
+      
+      // Launch the game
+      await launchGame(core, romPath, title);
+    }
+
+    // Unified emulator launcher: set EJS_* globals then append loader.js
     async function launchGame(core, romPath, title) {
+      const mappedCore = SYSTEM_MAP[core]?.core || core;
+
       window.currentGameTitle = title;
+      console.log('LAUNCH_GAME', { title, mappedCore, uid: window.currentUser?.uid });
       document.getElementById('modal-title').innerText = title;
       document.getElementById('player-modal').classList.add('active');
 
-      EJS_player = "#game";
-      EJS_core = core;
-      EJS_gameUrl = romPath;
-      EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-      
+      const gameRoot = document.getElementById('game');
+      if (gameRoot) {
+        gameRoot.innerHTML = '';
+      }
+
+      const normalizedRomUrl = /^https?:\/\//i.test(romPath)
+        ? romPath
+        : `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/main/${romPath}`;
+
+      window.EJS_player = '#game';
+      window.EJS_core = mappedCore;
+      window.EJS_gameUrl = normalizedRomUrl;
+      window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+      window.EJS_autosave = 1;
+      window.EJS_autoSave = 1;
+      window.EJS_onAudioCallback = null;
+      // Keep the normal EmulatorJS menu visible for save/load controls, while leaving touch controls off.
+      window.EJS_hideMenubar = 0;
+      window.EJS_disableMobileControls = 1;
+      window.EJS_gamepadUI = 0;
+      window.EJS_showGamepadUI = false;
+      window.EJS_showGamepadMenuButton = 1;
+
+      // Try to load previous save state
+      console.log('ATTEMPTING_TO_LOAD_SAVE', { title, hasLoadFunc: !!window.loadSaveFromCloud });
+      let loadedSaveBlob = null;
       if (window.loadSaveFromCloud) {
-        const cloudSave = await window.loadSaveFromCloud();
-        if (cloudSave) {
-          EJS_loadStateURL = URL.createObjectURL(cloudSave);
+        try {
+          const cloudSave = await window.loadSaveFromCloud();
+          console.log('SAVE_LOAD_RESULT', { loaded: !!cloudSave, size: cloudSave?.size || 0 });
+          if (cloudSave) {
+            loadedSaveBlob = cloudSave;
+            window.EJS_loadStateURL = URL.createObjectURL(cloudSave);
+            console.log('SAVE_STATE_SET_FOR_EMULATOR', { hasLoadStateURL: !!window.EJS_loadStateURL });
+          }
+        } catch (err) {
+          console.error('SAVE_LOAD_ERROR', err?.message || err);
+        }
+      }
+      window.__loadedSaveBlob = loadedSaveBlob;
+
+      function arcadeSaveHandler(data) {
+        console.log('SAVE CALLBACK FIRED', data);
+        console.log('SAVE CALLBACK KEYS', data && typeof data === 'object' ? Object.keys(data) : 'not-object');
+        if (window.syncSaveToCloud) {
+          const savePayload = data && typeof data === 'object' && data.state !== undefined ? data.state : data;
+          window.syncSaveToCloud(savePayload);
         }
       }
 
-      EJS_onSaveState = function(data) {
-        if (window.syncSaveToCloud) {
-          const blob = new Blob([data.state], { type: 'application/octet-stream' });
-          window.syncSaveToCloud(blob);
+      const bindSaveHandler = () => {
+        if (!window.EJS_emulator || typeof window.EJS_emulator.on !== 'function') {
+          setTimeout(bindSaveHandler, 250);
+          return;
+        }
+
+        console.log('ATTACHING EMULATOR SAVE HANDLER');
+        window.EJS_emulator.off?.('saveState', window.__arcadeSaveHook);
+        window.__arcadeSaveHook = function(data) {
+          const payload = data && typeof data === 'object' && data.state !== undefined ? data.state : data;
+          arcadeSaveHandler(payload);
+        };
+        window.EJS_emulator.on('saveState', window.__arcadeSaveHook);
+      };
+
+      window.EJS_onSaveState = function(data) {
+        const payload = data && typeof data === 'object' && data.state !== undefined ? data.state : data;
+        arcadeSaveHandler(payload);
+      };
+      if (window.EJS_emulator && typeof window.EJS_emulator.destroy === 'function') {
+        try { window.EJS_emulator.destroy(); } catch (e) { console.warn(e); }
+      }
+      bindSaveHandler();
+
+      const triggerNativeAutosave = async () => {
+        const emu = window.EJS_emulator;
+        if (!window.currentGameTitle || !emu) {
+          return;
+        }
+
+        try {
+          const state = (emu.gameManager && typeof emu.gameManager.getState === 'function') ? emu.gameManager.getState() : null;
+          if (state == null) {
+            console.warn('AUTO_SAVE_SKIPPED: no emulator state available yet');
+            return;
+          }
+
+          await window.syncSaveToCloud(state);
+          console.log('AUTO_SAVE_TICK', {
+            game: window.currentGameTitle,
+            stateType: typeof state,
+            stateSize: state && typeof state === 'object' ? Object.keys(state).length : (state ? String(state).length : 0)
+          });
+        } catch (err) {
+          console.warn('AUTO_SAVE_ERROR', err?.message || err);
         }
       };
 
-      if (window.EJS_emulator) {
-        window.EJS_emulator.destroy();
+      // Run a direct save from the emulator's state every 60s. This avoids the visible menu-triggered save path.
+      console.log('Emulator autosave enabled: direct 60s local save cycle, no UI click path used');
+
+      const existingLoader = document.querySelector('script[src="https://cdn.emulatorjs.org/stable/data/loader.js"]');
+      if (existingLoader) {
+        existingLoader.remove();
       }
+
+      const ejsScript = document.createElement('script');
+      ejsScript.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+      ejsScript.async = false;
+      document.body.appendChild(ejsScript);
+
+      const patchEjsResizeGuard = () => {
+        if (!window.EmulatorJS || window.__ejsResizeGuardInstalled) {
+          return;
+        }
+
+        try {
+          const originalHandleResize = window.EmulatorJS.prototype.handleResize;
+          if (typeof originalHandleResize !== 'function') {
+            return;
+          }
+
+          window.EmulatorJS.prototype.handleResize = function(...args) {
+            try {
+              if (!this || !this.game || !this.game.parentElement || !this.elements || !this.elements.parent) {
+                return;
+              }
+              return originalHandleResize.apply(this, args);
+            } catch (error) {
+              console.warn('EJS_RESIZE_GUARD_BLOCKED', error?.message || error);
+              return;
+            }
+          };
+
+          window.__ejsResizeGuardInstalled = true;
+        } catch (err) {
+          console.warn('EJS_RESIZE_PATCH_FAILED', err?.message || err);
+        }
+      };
+
+      setTimeout(patchEjsResizeGuard, 500);
+
+      const injectedLoadState = async () => {
+        if (!window.__loadedSaveBlob || !window.EJS_emulator) {
+          return;
+        }
+        
+        try {
+          console.log('INJECTING_SAVE_INTO_EMULATOR', { hasSave: !!window.__loadedSaveBlob });
+          
+          // Convert blob to ArrayBuffer for emulator
+          const arrayBuffer = await window.__loadedSaveBlob.arrayBuffer();
+          
+          // Try different emulator APIs to load the state
+          if (window.EJS_emulator.loadState && typeof window.EJS_emulator.loadState === 'function') {
+            window.EJS_emulator.loadState(arrayBuffer);
+            console.log('SAVE_INJECTED_VIA_loadState');
+          } else if (window.EJS_emulator.gameManager && typeof window.EJS_emulator.gameManager.loadState === 'function') {
+            window.EJS_emulator.gameManager.loadState(arrayBuffer);
+            console.log('SAVE_INJECTED_VIA_gameManager.loadState');
+          } else {
+            console.warn('NO_COMPATIBLE_LOADSTATE_METHOD');
+          }
+        } catch (err) {
+          console.error('SAVE_INJECTION_ERROR', err?.message || err);
+        }
+
+
+      };
+
+      setTimeout(() => {
+        // Inject loaded save into the emulator after it's initialized
+        injectedLoadState();
+        
+        // Start autosave interval
+        window.currentAutoSaveInterval = setInterval(() => {
+          triggerNativeAutosave();
+        }, 60000);
+      }, 2000);
     }
 
     function closeGame() {
-      document.getElementById('player-modal').classList.remove('active');
-      document.getElementById('game').innerHTML = '';
+      console.log('CLOSING_GAME', { title: window.currentGameTitle });
+      
+      // Stop autosave interval
+      if (window.currentAutoSaveInterval) {
+        clearInterval(window.currentAutoSaveInterval);
+        window.currentAutoSaveInterval = null;
+      }
+
+      // Save current game state one final time before closing
+      const performFinalSave = async () => {
+        if (window.saveCurrentGameState && typeof window.saveCurrentGameState === 'function') {
+          try {
+            await window.saveCurrentGameState();
+            console.log('FINAL_SAVE_ON_CLOSE');
+          } catch (e) {
+            console.warn('Final save on close failed:', e);
+          }
+        }
+
+        // Force pause the emulator
+        if (window.EJS_emulator) {
+          try {
+            if (typeof window.EJS_emulator.pause === 'function') {
+              window.EJS_emulator.pause();
+            }
+          } catch (e) {
+            console.warn('Emulator pause failed:', e);
+          }
+        }
+
+        // Remove event listeners
+        if (window.__arcadeSaveHook && window.EJS_emulator) {
+          try {
+            window.EJS_emulator.off?.('saveState', window.__arcadeSaveHook);
+          } catch (e) {
+            console.warn('Remove save hook failed:', e);
+          }
+        }
+
+        // Destroy emulator completely
+        if (window.EJS_emulator && typeof window.EJS_emulator.destroy === 'function') {
+          try {
+            window.EJS_emulator.destroy();
+            console.log('EMULATOR_DESTROYED');
+          } catch (e) {
+            console.warn('Emulator destroy failed:', e);
+          }
+        }
+
+        // Clear emulator reference
+        window.EJS_emulator = null;
+        window.__loadedSaveBlob = null;
+
+        // Hide modal and clear game container
+        document.getElementById('player-modal').classList.remove('active');
+        const gameNode = document.getElementById('game');
+        if (gameNode) {
+          gameNode.innerHTML = '';
+        }
+
+        // Clear current game title (AFTER all save operations complete)
+        window.currentGameTitle = "";
+        
+        console.log('GAME_CLOSED_SUCCESSFULLY');
+      };
+
+      performFinalSave();
     }
+
+    window.addEventListener('DOMContentLoaded', fetchArcadeLibrary);
   </script>
 </body>
 </html>
