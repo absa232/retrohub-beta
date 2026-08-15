@@ -114,6 +114,15 @@
       display: none;
     }
 
+    .welcome-spinner.hidden {
+      display: none;
+    }
+
+    .enter-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
         .enter-btn {
       background-color: var(--accent);
       color: #000;
@@ -459,20 +468,28 @@
     window.cloudSaveEnabled = true;
 
     function showWelcomeLoadingState() {
-      const spinner = document.getElementById('welcome-spinner');
-      const icon = document.getElementById('welcome-google-icon');
-      const label = document.getElementById('welcome-btn-label');
-      if (spinner) spinner.classList.remove('hidden');
-      if (icon) icon.classList.add('hidden');
-      if (label) label.classList.add('hidden');
-    }
-
-    function updateWelcomeButton(user) {
+      const btn = document.getElementById('welcome-btn');
       const spinner = document.getElementById('welcome-spinner');
       const icon = document.getElementById('welcome-google-icon');
       const label = document.getElementById('welcome-btn-label');
       
-      // Hide spinner and show icon + label
+      // Show spinner and "Verifying..." text, disable button
+      if (spinner) spinner.classList.remove('hidden');
+      if (icon) icon.classList.add('hidden');
+      if (label) {
+        label.classList.remove('hidden');
+        label.innerText = 'Verifying...';
+      }
+      if (btn) btn.disabled = true;
+    }
+
+    function updateWelcomeButton(user) {
+      const btn = document.getElementById('welcome-btn');
+      const spinner = document.getElementById('welcome-spinner');
+      const icon = document.getElementById('welcome-google-icon');
+      const label = document.getElementById('welcome-btn-label');
+      
+      // Hide spinner and show icon + label, enable button
       if (spinner) spinner.classList.add('hidden');
       if (icon) icon.classList.remove('hidden');
       if (label) label.classList.remove('hidden');
@@ -481,7 +498,14 @@
       if (label) {
         label.innerText = user ? `Continue as ${user.displayName || 'Google User'}` : 'Sign in with Google';
       }
+      
+      // Enable button for user interaction
+      if (btn) btn.disabled = false;
     }
+
+    // Show initial loading state BEFORE auth check
+    document.getElementById('landing-screen').classList.remove('hidden');
+    showWelcomeLoadingState();
 
     function updateUserUI(user) {
       window.currentUser = user || null;
@@ -530,7 +554,7 @@
         return;
       }
 
-      // Show loading spinner during sign in
+      // Show loading spinner during sign-in
       showWelcomeLoadingState();
 
       try {
@@ -571,10 +595,6 @@
         document.getElementById('landing-screen').classList.remove('hidden');
       }
     });
-
-    // Initialize: show landing screen with loading spinner while auth state is being checked
-    showWelcomeLoadingState();
-    document.getElementById('landing-screen').classList.remove('hidden');
 
     // URL Router for dashboard and game play routes
     const router = () => {
