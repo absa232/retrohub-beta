@@ -1514,31 +1514,6 @@
 
         /*
          * ========================================================
-         * FBNEO / FBA BIOS
-         * ========================================================
-         */
-
-        if (
-          gameCore === 'fbneo' ||
-          gameCore === 'fba'
-        ) {
-
-          const proxyBaseUrl =
-            'https://patient-cloud-c9bc.retrohub-proxy.workers.dev';
-
-
-          const biosUrl =
-            'https://archive.org/download/neo-geo-bios/neogeo.zip';
-
-
-          window.EJS_biosUrl =
-            `${proxyBaseUrl}/neogeo.zip?url=${encodeURIComponent(biosUrl)}`;
-
-        }
-
-
-        /*
-         * ========================================================
          * SAVE STATE CALLBACK
          * ========================================================
          */
