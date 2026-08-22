@@ -1183,8 +1183,14 @@
           'https://patient-cloud-c9bc.retrohub-proxy.workers.dev';
 
 
+        const romFileName =
+          decodeURIComponent(
+            new URL(romPath).pathname.split('/').pop()
+          );
+
+
         return (
-          `${proxyBaseUrl}/?url=` +
+          `${proxyBaseUrl}/${encodeURIComponent(romFileName)}?url=` +
           encodeURIComponent(romPath)
         );
 
@@ -1526,7 +1532,7 @@
 
 
           window.EJS_biosUrl =
-            `${proxyBaseUrl}/?url=${encodeURIComponent(biosUrl)}`;
+            `${proxyBaseUrl}/neogeo.zip?url=${encodeURIComponent(biosUrl)}`;
 
         }
 
