@@ -1569,6 +1569,89 @@
          * ========================================================
          */
 
+        function applyPendingSavedState() {
+
+          if (
+            !window.__pendingSavedStateBytes
+          ) {
+
+            return;
+
+          }
+
+
+          let attempts = 0;
+
+
+          const applyInterval =
+            setInterval(
+              () => {
+
+                const gameManager =
+                  window.EJS_emulator?.gameManager;
+
+
+                if (
+                  !gameManager ||
+                  typeof gameManager.loadState !==
+                    'function'
+                ) {
+
+                  attempts++;
+
+
+                  if (attempts >= 40) {
+                    clearInterval(applyInterval);
+                  }
+
+
+                  return;
+
+                }
+
+
+                try {
+
+                  gameManager.loadState(
+                    window.__pendingSavedStateBytes
+                  );
+
+
+                  window.__pendingSavedStateBytes =
+                    null;
+
+
+                  clearInterval(applyInterval);
+
+
+                  console.log(
+                    'Applied saved game state to emulator'
+                  );
+
+                } catch (err) {
+
+                  attempts++;
+
+
+                  if (attempts >= 40) {
+                    clearInterval(applyInterval);
+
+
+                    console.warn(
+                      'Could not apply saved game state:',
+                      err?.message || err
+                    );
+
+                  }
+
+                }
+
+              },
+              250
+            );
+
+        }
+
         window.EJS_onGameStart =
           () => {
 
@@ -1614,42 +1697,7 @@
               );
 
 
-            /*
-             * Apply saved state.
-             */
-            if (
-              window.__pendingSavedStateBytes &&
-              window.EJS_emulator?.gameManager
-            ) {
-
-              try {
-
-                window.EJS_emulator
-                  .gameManager
-                  .loadState(
-                    window.__pendingSavedStateBytes
-                  );
-
-
-                window.__pendingSavedStateBytes =
-                  null;
-
-
-                console.log(
-                  'Applied saved game state to emulator'
-                );
-
-
-              } catch (err) {
-
-                console.warn(
-                  'Could not apply saved game state:',
-                  err?.message || err
-                );
-
-              }
-
-            }
+            applyPendingSavedState();
 
           };
 
