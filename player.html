@@ -1721,13 +1721,20 @@
               );
 
 
+              const firestoreGameKey =
+                window.currentGameTitle
+                  .replace(/[\\/\[\]#?]/g, '-')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+
+
               let saveRef =
                 window.firestoreDoc(
                   window.firebaseDb,
                   'saves',
                   window.currentUser.uid,
                   'games',
-                  window.currentGameTitle
+                  firestoreGameKey
                 );
 
 
@@ -1746,7 +1753,32 @@
                *
                * was invalid.
                */
-              if (!saveSnap.exists()) {
+              if (
+                !saveSnap.exists() &&
+                firestoreGameKey !== window.currentGameTitle
+              ) {
+
+                saveRef =
+                  window.firestoreDoc(
+                    window.firebaseDb,
+                    'saves',
+                    window.currentUser.uid,
+                    'games',
+                    window.currentGameTitle
+                  );
+
+
+                saveSnap =
+                  await window.firestoreGetDoc(
+                    saveRef
+                  );
+
+              }
+
+
+              if (
+                !saveSnap.exists()
+              ) {
 
                 saveRef =
                   window.firestoreDoc(
@@ -1794,18 +1826,40 @@
                     index++
                   ) {
 
-                    const chunkRef =
+                    const siblingChunkRef =
                       window.firestoreDoc(
-                        saveRef,
-                        'chunks',
-                        String(index)
+                        window.firebaseDb,
+                        'saves',
+                        window.currentUser.uid,
+                        'games',
+                        `${firestoreGameKey}_chunk_${index}`
                       );
 
 
-                    const chunkSnap =
+                    let chunkSnap =
                       await window.firestoreGetDoc(
-                        chunkRef
+                        siblingChunkRef
                       );
+
+
+                    if (
+                      !chunkSnap.exists()
+                    ) {
+
+                      const nestedChunkRef =
+                        window.firestoreDoc(
+                          saveRef,
+                          'chunks',
+                          String(index)
+                        );
+
+
+                      chunkSnap =
+                        await window.firestoreGetDoc(
+                          nestedChunkRef
+                        );
+
+                    }
 
 
                     if (
@@ -1892,7 +1946,6 @@
               );
 
             }
-
 
           } catch (err) {
 
@@ -2005,8 +2058,6 @@
       }
 
     }
-
-
     /*
      * ============================================================
      * AUTOSAVE
