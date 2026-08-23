@@ -1182,7 +1182,7 @@
           console.log('Fetched category:', categoryId, 'Games:', games.length);
 
           if (!games.length) {
-            section.querySelector('h2').textContent = categoryData.name || categoryId;
+            section.querySelector('h2').textContent = systemData.name || categoryData.name || categoryId;
             const emptyState = document.createElement('div');
             emptyState.className = 'game-empty';
             emptyState.textContent = 'This category is currently empty.';
@@ -1190,7 +1190,7 @@
             continue;
           }
 
-          section.querySelector('h2').textContent = categoryData.name || categoryId;
+          section.querySelector('h2').textContent = systemData.name || categoryData.name || categoryId;
           const grid = section.querySelector(`#${gridId}`);
           console.log('Grid element found:', !!grid, 'For gridId:', gridId);
 
